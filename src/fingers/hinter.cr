@@ -8,8 +8,9 @@ module Fingers
     property text : String
     property hint : String
     property offset : Tuple(Int32, Int32)
+    property highlight_bounds : Tuple(Int32, Int32, Int32)
 
-    def initialize(@text, @hint, @offset)
+    def initialize(@text, @hint, @offset, @highlight_bounds = {0, 0, 0})
     end
   end
 
@@ -37,6 +38,7 @@ module Fingers
       @width = width
       @target_by_hint = {} of String => Target
       @target_by_text = {} of String => Target
+      @all_targets = [] of Target
       @state = state
       @output = output
       @formatter = formatter
@@ -58,6 +60,17 @@ module Fingers
       target_by_hint.fetch(hint) { nil }
     end
 
+    def lookup_by_position(x : Int32, y : Int32) : Target | Nil
+      all_targets.each do |target|
+        line, col, length = target.highlight_bounds
+        next unless line == y
+        if x >= col && x < col + length
+          return target
+        end
+      end
+      nil
+    end
+
     # private
 
     private getter :hints,
@@ -74,7 +87,8 @@ module Fingers
       :alphabet,
       :reuse_hints,
       :target_by_hint,
-      :target_by_text
+      :target_by_text,
+      :all_targets
 
     def process_line(line, line_index, ending)
       tab_positions = tab_positions_for(line)
@@ -106,6 +120,7 @@ module Fingers
       @hints = huffman.generate_hints(alphabet: alphabet.clone, n: n_matches)
       @target_by_hint.clear
       @target_by_text.clear
+      @all_targets.clear
     end
 
     def replace(match, line_index)
@@ -127,7 +142,8 @@ module Fingers
         return text
       end
 
-      build_target(captured_text, hint, absolute_offset)
+      highlight_bounds = {line_index, match.begin(0), match[0].size}
+      build_target(captured_text, hint, absolute_offset, highlight_bounds)
 
       if !state.input.empty? && !hint.starts_with?(state.input)
         return text
@@ -175,11 +191,12 @@ module Fingers
       {capture_start - match_start, captured_text.size}
     end
 
-    def build_target(text, hint, offset)
-      target = Target.new(text, hint, offset)
+    def build_target(text, hint, offset, highlight_bounds)
+      target = Target.new(text, hint, offset, highlight_bounds)
 
       target_by_hint[hint] = target
       target_by_text[text] = target
+      all_targets << target
 
       target
     end
