@@ -44,6 +44,9 @@ module Fingers
       when "hint"
         char, modifier = args
         process_hint(char, modifier)
+      when "mouse"
+        x, y, modifier = args
+        process_mouse_click(x.to_i, y.to_i, modifier)
       when "exit"
         request_exit!
       when "toggle-help"
@@ -72,6 +75,16 @@ module Fingers
         render
       else
         handle_match(match.not_nil!.text)
+      end
+    end
+
+    private def process_mouse_click(x : Int32, y : Int32, modifier : String)
+      state.modifier = modifier
+
+      match = hinter.lookup_by_position(x, y)
+
+      if match
+        handle_match(match.text)
       end
     end
 

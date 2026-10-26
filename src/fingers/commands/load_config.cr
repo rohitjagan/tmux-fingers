@@ -94,7 +94,26 @@ class Fingers::Commands::LoadConfig < Cling::Command
     fingers_mode_bind("Enter", "noop")
     fingers_mode_bind("Tab", "toggle-multi-mode")
 
-    fingers_mode_bind("Any", "noop")
+    `tmux bind-key -Tfingers Any send-keys ''`
+
+    setup_mouse_bindings
+  end
+
+  def setup_mouse_bindings
+    fingers_mode_bind_mouse("MouseDown1Pane", "mouse", "main")
+    fingers_mode_bind_mouse("S-MouseDown1Pane", "mouse", "shift")
+    fingers_mode_bind_mouse("C-MouseDown1Pane", "mouse", "ctrl")
+    fingers_mode_bind_mouse("M-MouseDown1Pane", "mouse", "alt")
+
+    # Bind mouse release events to nothing (avoid socket errors after exit)
+    `tmux bind-key -Tfingers MouseUp1Pane send-keys ''`
+    `tmux bind-key -Tfingers S-MouseUp1Pane send-keys ''`
+    `tmux bind-key -Tfingers C-MouseUp1Pane send-keys ''`
+    `tmux bind-key -Tfingers M-MouseUp1Pane send-keys ''`
+  end
+
+  def fingers_mode_bind_mouse(key, command, modifier)
+    `tmux bind-key -Tfingers "#{key}" run-shell -b "#{cli} send-input #{command}:#\{mouse_x\}:#\{mouse_y\}:#{modifier}"`
   end
 
   def shell_safe_options
