@@ -27,7 +27,6 @@ module Fingers::Commands
 
   class Start < Cling::Command
     @original_options : Hash(String, String) = {} of String => String
-    @last_key_table : String = "root"
     @last_pane_id : String | Nil
     @mode : String = "default"
     @pane_id : String = ""
@@ -127,16 +126,11 @@ module Fingers::Commands
     end
 
     private def track_tmux_state
-      output = tmux.exec("display-message -t '{last}' -p '\#{pane_id};\#{client_key_table};\#{prefix};\#{prefix2}'").chomp
+      output = tmux.exec("display-message -t '{last}' -p '\#{pane_id};\#{prefix};\#{prefix2}'").chomp
 
-      last_pane_id, last_key_table, prefix, prefix2 = output.split(";")
+      last_pane_id, prefix, prefix2 = output.split(";")
 
       @last_pane_id = last_pane_id
-      @last_key_table = if last_key_table.empty?
-                          "root"
-                        else
-                          last_key_table
-                        end
 
       @original_options["prefix"] = prefix
       @original_options["prefix2"] = prefix2
@@ -149,7 +143,7 @@ module Fingers::Commands
     end
 
     private def restore_last_key_table
-      tmux.set_key_table(@last_key_table)
+      tmux.reset_key_table
     end
 
     private def restore_last_pane

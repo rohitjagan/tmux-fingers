@@ -216,6 +216,15 @@ class Tmux
     exec(["switch-client", "-T", table].join(' '))
   end
 
+  # key-table is a session option, so set_key_table overrides it for the whole
+  # session. Unset the override instead of writing a table name back: a
+  # transient table captured at start (e.g. "prefix") would otherwise stick on
+  # the session and make every keystroke a prefix key.
+  def reset_key_table
+    exec("set-option -u key-table")
+    exec("switch-client -T root")
+  end
+
   def disable_prefix
     set_global_option("prefix", "None")
     set_global_option("prefix2", "None")
